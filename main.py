@@ -41,8 +41,8 @@ torch.backends.cudnn.deterministic = True
 
 # 解析命令行参数
 parser = argparse.ArgumentParser(description='encrypted traffic classification')
-# dataset: 使用哪个数据集（0-SJTUAN21, 1-ISCXVPN, 2-ISCXTor, 3-USTC-TFC, 5-Cross-Platform）
-parser.add_argument('--dataset', default=0, type=int, help='datasets for training (0-2)')
+# dataset: 数据集编号，这里主要用于日志命名；当前脚本默认使用 CipherSpectrum，可保持为 0
+parser.add_argument('--dataset', default=0, type=int, help='dataset id (kept for compatibility, default 0 for CipherSpectrum)')
 # method: 使用哪种特征方法，对应 data_{noise}/.../{method} 目录（ShortTerm 为主方法）
 parser.add_argument('--method', default="Whisper", choices=["Whisper", "Characterize", "Robust", "Flowlens",
                                                             "ShortTerm",
@@ -65,27 +65,25 @@ parser.add_argument('--data_size', default=1.0, type=float, help='data size')
 args = parser.parse_args()
 print(args)
 
-# 根据 noise 和 method 在 data_{noise}/... 下收集所有特征文件路径
-# 实际目录结构类似：data_0.0/0_SJTUAN21/train/<类别名>/<method>/*.npy
-# 这里只有 0_SJTUAN21（dataset=0）这一套数据，因此直接在 0_SJTUAN21 下匹配两级子目录
-filenames = glob.glob(f"data_{args.noise}/0_SJTUAN21/*/*/{args.method}/*.*")
-train_filenames = sorted([filename for filename in filenames if "train" in filename])
-test_filenames = sorted([filename for filename in filenames if "test" in filename])
+# 根据 noise 和 method 在 data_{noise}/CipherSpectrum 下收集所有特征文件路径
+# 期望目录结构：data_<noise>/CipherSpectrum/<domain>/<method>/*.npy
+filenames = glob.glob(f"data_{args.noise}/CipherSpectrum/*/{args.method}/*.*")
+filenames = sorted(filenames)
 
-if args.dataset == 0:
-    # 对 SJTU-AN21（数据集 0），分类类别在路径的第 1 个位置
-    classifier_position = 1
-else:
-    # 对其他数据集，分类类别在路径的第 0 个位置
-    classifier_position = 0
+if len(filenames) == 0:
+    raise RuntimeError(f"No files found for pattern data_{args.noise}/CipherSpectrum/*/{args.method}/*.*")
 
-if args.dataset == 5:
-    classifier = sorted(set([filename.split("/")[-4] for filename in filenames]))
-else:
-    classifier = sorted(set([filename.split("/")[-1].split("_")[classifier_position] for filename in filenames]))
+# CipherSpectrum 中的类别使用域名文件夹名：data_0.0/CipherSpectrum/<domain>/<method>/xxx.npy
+classifier = sorted(set([filename.split("/")[-3] for filename in filenames]))
 
-if args.dataset == 3:
-    classifier = sorted(set([c1.split("-")[0] for c1 in classifier]))
+# 按会话级随机划分 train / test（例如 8:2），不依赖 train/test 物理文件夹
+rng_split = np.random.RandomState(SEED)
+perm = rng_split.permutation(len(filenames))
+split_idx = int(0.8 * len(filenames))
+train_idx = perm[:split_idx]
+test_idx = perm[split_idx:]
+train_filenames = [filenames[i] for i in train_idx]
+test_filenames = [filenames[i] for i in test_idx]
 
 
 class Logger(object):
