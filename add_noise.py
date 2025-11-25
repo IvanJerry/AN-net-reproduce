@@ -13,7 +13,7 @@ np.random.seed(SEED)
 random.seed(SEED)
 
 TLS_filenames = glob.glob("RawData/4_CICIOT/5-Active/Active/*.npy")
-filenames = glob.glob("RawData/0_SJTUAN21/*/*.npy")
+filenames = glob.glob("RawData/0_SJTUAN21/*/*/*.npy")
 
 filenames = [filename[:-6] for filename in filenames]
 TLS_filenames = [filename[:-6] for filename in TLS_filenames]

@@ -1,0 +1,202 @@
+train samples: 37529 [14866, 1418, 627, 1861, 9913, 71, 1371, 3974, 2690, 738]
+test samples: 9133 [1996, 707, 175, 737, 3070, 8, 1073, 289, 1047, 31]
+ShortTerm on Dataset 0
+ at epoch 0:
+train loss: 0.45252829491347074 test loss: 1.518637554003642
+AC: 0.3669, PR: 0.4739, RC: 0.3669, F1: 0.2079
+ShortTerm on Dataset 0
+ at epoch 1:
+train loss: 0.24553282968699933 test loss: 0.6101430586141932
+AC: 0.7894, PR: 0.8168, RC: 0.7894, F1: 0.7732
+ShortTerm on Dataset 0
+ at epoch 2:
+train loss: 0.2040257251895964 test loss: 0.297607488122645
+AC: 0.922, PR: 0.9199, RC: 0.922, F1: 0.9174
+ShortTerm on Dataset 0
+ at epoch 3:
+train loss: 0.1820015227198601 test loss: 0.24803429413782238
+AC: 0.9341, PR: 0.9286, RC: 0.9341, F1: 0.9298
+ShortTerm on Dataset 0
+ at epoch 4:
+train loss: 0.16940457990765573 test loss: 0.2273125949126857
+AC: 0.9393, PR: 0.9342, RC: 0.9393, F1: 0.9354
+ShortTerm on Dataset 0
+ at epoch 5:
+train loss: 0.15850619292259216 test loss: 0.216605951374566
+AC: 0.9392, PR: 0.9345, RC: 0.9392, F1: 0.935
+ShortTerm on Dataset 0
+ at epoch 6:
+train loss: 0.14825236517563462 test loss: 0.20167314641868006
+AC: 0.9422, PR: 0.9368, RC: 0.9422, F1: 0.9378
+ShortTerm on Dataset 0
+ at epoch 7:
+train loss: 0.14395343029126526 test loss: 0.1959126141244689
+AC: 0.9434, PR: 0.9385, RC: 0.9434, F1: 0.939
+ShortTerm on Dataset 0
+ at epoch 8:
+train loss: 0.13912255440466106 test loss: 0.19071013496869563
+AC: 0.9448, PR: 0.9401, RC: 0.9448, F1: 0.9405
+ShortTerm on Dataset 0
+ at epoch 9:
+train loss: 0.1329767853319645 test loss: 0.1902233622137822
+AC: 0.9432, PR: 0.9406, RC: 0.9432, F1: 0.9395
+ShortTerm on Dataset 0
+ at epoch 10:
+train loss: 0.13158510621823372 test loss: 0.19128722829379505
+AC: 0.9432, PR: 0.9424, RC: 0.9432, F1: 0.9399
+ShortTerm on Dataset 0
+ at epoch 11:
+train loss: 0.12841287248302252 test loss: 0.1905513125230799
+AC: 0.9438, PR: 0.9446, RC: 0.9438, F1: 0.9412
+ShortTerm on Dataset 0
+ at epoch 12:
+train loss: 0.12478921787254513 test loss: 0.19196426369562433
+AC: 0.9427, PR: 0.9455, RC: 0.9427, F1: 0.9408
+ShortTerm on Dataset 0
+ at epoch 13:
+train loss: 0.12412318674847483 test loss: 0.19029007392521896
+AC: 0.9435, PR: 0.9457, RC: 0.9435, F1: 0.9412
+ShortTerm on Dataset 0
+ at epoch 14:
+train loss: 0.11910820665210485 test loss: 0.18648914519088486
+AC: 0.9436, PR: 0.9464, RC: 0.9436, F1: 0.9414
+ShortTerm on Dataset 0
+ at epoch 15:
+train loss: 0.11896325606573373 test loss: 0.185795142864841
+AC: 0.9426, PR: 0.9463, RC: 0.9426, F1: 0.9405
+ShortTerm on Dataset 0
+ at epoch 16:
+train loss: 0.11500506557803601 test loss: 0.1855105219272102
+AC: 0.9435, PR: 0.9469, RC: 0.9435, F1: 0.9411
+ShortTerm on Dataset 0
+ at epoch 17:
+train loss: 0.11470671201311052 test loss: 0.18998275538564535
+AC: 0.9405, PR: 0.9467, RC: 0.9405, F1: 0.9389
+ShortTerm on Dataset 0
+ at epoch 18:
+train loss: 0.10697153455484658 test loss: 0.19186779452158934
+AC: 0.9404, PR: 0.9471, RC: 0.9404, F1: 0.9388
+ShortTerm on Dataset 0
+ at epoch 19:
+train loss: 0.11181007735710591 test loss: 0.19060996481155573
+AC: 0.9413, PR: 0.9467, RC: 0.9413, F1: 0.9392
+ShortTerm on Dataset 0
+ at epoch 20:
+train loss: 0.10959334879368543 test loss: 0.18557406279137945
+AC: 0.9419, PR: 0.947, RC: 0.9419, F1: 0.9397
+ShortTerm on Dataset 0
+ at epoch 21:
+train loss: 0.10633108924981206 test loss: 0.18478929907835734
+AC: 0.9411, PR: 0.9476, RC: 0.9411, F1: 0.9396
+ShortTerm on Dataset 0
+ at epoch 22:
+train loss: 0.10759875677060336 test loss: 0.1855907204293913
+AC: 0.9409, PR: 0.9471, RC: 0.9409, F1: 0.939
+ShortTerm on Dataset 0
+ at epoch 23:
+train loss: 0.10448980490397662 test loss: 0.1886791725878252
+AC: 0.9408, PR: 0.9472, RC: 0.9408, F1: 0.9387
+ShortTerm on Dataset 0
+ at epoch 24:
+train loss: 0.10452175157144666 test loss: 0.19160784414922166
+AC: 0.94, PR: 0.9461, RC: 0.94, F1: 0.9376
+ShortTerm on Dataset 0
+ at epoch 25:
+train loss: 0.104814881301485 test loss: 0.1918379313477732
+AC: 0.9398, PR: 0.9457, RC: 0.9398, F1: 0.9372
+ShortTerm on Dataset 0
+ at epoch 26:
+train loss: 0.10391023830976337 test loss: 0.19148178255410175
+AC: 0.9388, PR: 0.9473, RC: 0.9388, F1: 0.9371
+ShortTerm on Dataset 0
+ at epoch 27:
+train loss: 0.10079671574104578 test loss: 0.1921591911370495
+AC: 0.9407, PR: 0.9458, RC: 0.9407, F1: 0.9377
+ShortTerm on Dataset 0
+ at epoch 28:
+train loss: 0.1011542073711753 test loss: 0.1928933497019262
+AC: 0.9407, PR: 0.9471, RC: 0.9407, F1: 0.9382
+ShortTerm on Dataset 0
+ at epoch 29:
+train loss: 0.10060479986108839 test loss: 0.1915605515949884
+AC: 0.941, PR: 0.9469, RC: 0.941, F1: 0.9384
+ShortTerm on Dataset 0
+ at epoch 30:
+train loss: 0.09932006068620831 test loss: 0.19676335114607965
+AC: 0.9381, PR: 0.9468, RC: 0.9381, F1: 0.9362
+ShortTerm on Dataset 0
+ at epoch 31:
+train loss: 0.09775045698415488 test loss: 0.19106208727291257
+AC: 0.9393, PR: 0.948, RC: 0.9393, F1: 0.9375
+ShortTerm on Dataset 0
+ at epoch 32:
+train loss: 0.09832097141072155 test loss: 0.19733946333912858
+AC: 0.938, PR: 0.9474, RC: 0.938, F1: 0.9363
+ShortTerm on Dataset 0
+ at epoch 33:
+train loss: 0.09364513692539185 test loss: 0.19415316866609836
+AC: 0.9407, PR: 0.9471, RC: 0.9407, F1: 0.9383
+ShortTerm on Dataset 0
+ at epoch 34:
+train loss: 0.09688374572480098 test loss: 0.18759803432919137
+AC: 0.9432, PR: 0.9485, RC: 0.9432, F1: 0.9408
+ShortTerm on Dataset 0
+ at epoch 35:
+train loss: 0.09466635219659657 test loss: 0.18873564512110674
+AC: 0.943, PR: 0.9478, RC: 0.943, F1: 0.9403
+ShortTerm on Dataset 0
+ at epoch 36:
+train loss: 0.09351810431014747 test loss: 0.18855323331630822
+AC: 0.9436, PR: 0.9492, RC: 0.9436, F1: 0.9413
+ShortTerm on Dataset 0
+ at epoch 37:
+train loss: 0.09052506083901972 test loss: 0.18732912830867596
+AC: 0.9453, PR: 0.949, RC: 0.9453, F1: 0.9427
+ShortTerm on Dataset 0
+ at epoch 38:
+train loss: 0.09506767105683685 test loss: 0.18711079490290453
+AC: 0.9457, PR: 0.948, RC: 0.9457, F1: 0.9422
+ShortTerm on Dataset 0
+ at epoch 39:
+train loss: 0.09406082904618233 test loss: 0.1947827949113346
+AC: 0.9426, PR: 0.9468, RC: 0.9426, F1: 0.9392
+ShortTerm on Dataset 0
+ at epoch 40:
+train loss: 0.09165501258755103 test loss: 0.18914642698400966
+AC: 0.943, PR: 0.9473, RC: 0.943, F1: 0.9398
+ShortTerm on Dataset 0
+ at epoch 41:
+train loss: 0.08965834286017343 test loss: 0.1874862946869099
+AC: 0.9444, PR: 0.9478, RC: 0.9444, F1: 0.9413
+ShortTerm on Dataset 0
+ at epoch 42:
+train loss: 0.08992869843216612 test loss: 0.17847251453415744
+AC: 0.9479, PR: 0.9506, RC: 0.9479, F1: 0.945
+ShortTerm on Dataset 0
+ at epoch 43:
+train loss: 0.09132610107399523 test loss: 0.1745264356527673
+AC: 0.9494, PR: 0.9512, RC: 0.9494, F1: 0.9463
+ShortTerm on Dataset 0
+ at epoch 44:
+train loss: 0.08702818728704005 test loss: 0.18150352735896236
+AC: 0.9467, PR: 0.9498, RC: 0.9467, F1: 0.9437
+ShortTerm on Dataset 0
+ at epoch 45:
+train loss: 0.08703690272103995 test loss: 0.18463004809735878
+AC: 0.9476, PR: 0.949, RC: 0.9476, F1: 0.9439
+ShortTerm on Dataset 0
+ at epoch 46:
+train loss: 0.0888780075488612 test loss: 0.1844572500287884
+AC: 0.9471, PR: 0.9489, RC: 0.9471, F1: 0.9435
+ShortTerm on Dataset 0
+ at epoch 47:
+train loss: 0.08640331099554896 test loss: 0.1868728288028868
+AC: 0.9457, PR: 0.9491, RC: 0.9457, F1: 0.9427
+ShortTerm on Dataset 0
+ at epoch 48:
+train loss: 0.0892752139843069 test loss: 0.18279469256892547
+AC: 0.9466, PR: 0.9504, RC: 0.9466, F1: 0.9438
+ShortTerm on Dataset 0
+ at epoch 49:
+train loss: 0.08917506876960397 test loss: 0.18150437738192007
+AC: 0.9477, PR: 0.9509, RC: 0.9477, F1: 0.945

@@ -6,17 +6,52 @@ from collections import defaultdict
 from numpy import fft
 import scipy.stats as st
 import random
+import argparse
 
+# 固定随机种子，保证每次预处理结果一致
 SEED = 2023
 np.random.seed(SEED)
 random.seed(SEED)
 
 
+# 支持的特征方法名称，和目录名、main.py 中的 --method 一一对应
+METHOD_CHOICES = [
+    "ShortTerm",      # 论文主方法使用的特征：长度/时间/TTL/IPFlag/TCPFlag/载荷等六类信息拼接
+    "ETBert",         # 把载荷转成 bigram token 序列，写入 txt，用于 Bert 类方法
+    "Flowlens",       # 统计每个流中长度直方图（bucket 分布），写入 csv
+    "Fs-net",         # 只保留长度序列，按窗口 reshape 成 [N, 100]
+    "AttnLSTM",       # 把载荷转成 64 维整数序列，reshape 成 [N, 100, 64]
+    "Whisper",        # 对长度序列做 FFT，取前 51 维频谱幅值
+    "Characterize",   # 对时间间隔做统计特征（均值/方差/偏度/峰度/中位数/最小/最大）
+    "Robust",         # 对长度序列做统计特征（同上），更鲁棒的长度特征
+]
+
+
+def parse_args():
+    # 通过命令行参数控制要生成哪些方法的数据
+    # --methods ALL              -> 生成所有方法（默认，等价于原始脚本行为）
+    # --methods ShortTerm        -> 只生成 ShortTerm 特征
+    # --methods ShortTerm,Whisper -> 同时生成多个方法
+    parser = argparse.ArgumentParser(description="Preprocess raw data into method-specific features")
+    parser.add_argument(
+        "--methods",
+        type=str,
+        default="ALL",
+        help=(
+            "Comma-separated list of methods to process, e.g. "
+            "'ShortTerm,Whisper'. Use 'ALL' to process all methods."
+        ),
+    )
+    return parser.parse_args()
+
+
 def cut(obj):
+    # 每 4 个字符切一段（用于 16 进制串分块）
     return [obj[i:i + 4] for i in range(0, len(obj), 4)]
 
 
 def cut2(obj):
+    # 每 2 个字符切一段（1 字节 = 2 个 16 进制字符）
     return [obj[i:i + 2] for i in range(0, len(obj), 2)]
 
 
@@ -34,6 +69,7 @@ def cut_origin(obj, sec):
 
 
 def bigram_generation(packet_datagram, packet_len=64, flag=True):
+    # 把 16 进制串按 1 字节滑动，生成 bigram token 序列
     result = []
     generated_datagram = cut_origin(packet_datagram, 1)
     token_count = 0
@@ -52,6 +88,7 @@ def bigram_generation(packet_datagram, packet_len=64, flag=True):
 
 
 def int_generation(packet_datagram, packet_len=64):
+    # 把 16 进制载荷转换为定长整数序列（长度 64，不足补 0）
     result = []
     generated_datagram = cut2(packet_datagram)
     token_count = 0
@@ -221,11 +258,18 @@ def ShortTerm(time_sequence, length_sequence, ttl_sequence, ip_flag_sequence, tc
     np.save(basename + ".npy", result)
 
 
+args = parse_args()
+if args.methods.upper() == "ALL":
+    selected_methods = set(METHOD_CHOICES)
+else:
+    selected_methods = set(m.strip() for m in args.methods.split(",") if m.strip())
+
+
 for noise in [0.0, "0.5_SIM", "0.5_TLS", "0.75_SIM", "0.75_TLS"]:
     if noise == 0.0:
-        filenames = glob.glob(f"RawData/0_SJTUAN21/*/*.npy")
+        filenames = glob.glob(f"RawData/CipherSpectrum/*/*.npy")
     else:
-        filenames = glob.glob(f"RawData_{noise}/0_SJTUAN21/*/*.npy")
+        filenames = glob.glob(f"RawData_{noise}/CipherSpectrum/*/*.npy")
     filenames = [filename[:-6] for filename in filenames]
     filenames = sorted(set(filenames))
 
@@ -244,37 +288,55 @@ for noise in [0.0, "0.5_SIM", "0.5_TLS", "0.75_SIM", "0.75_TLS"]:
         ip_flag_sequence = np.load(filename + "_F.npy")
         tcp_flag_sequence = np.load(filename + "_C.npy")
 
-        packet_data_int_sequence = np.asarray([int_generation(packet_raw_string)
-                                               for packet_raw_string in packet_raw_string_sequence])
+        packet_data_int_sequence = np.asarray([
+            int_generation(packet_raw_string)
+            for packet_raw_string in packet_raw_string_sequence
+        ])
 
-        if not os.path.exists(new_dir + "ShortTerm"):
-            os.mkdir(new_dir + "ShortTerm")
-        ShortTerm(time_sequence, length_sequence, ttl_sequence, ip_flag_sequence, tcp_flag_sequence, packet_data_int_sequence, new_dir + "ShortTerm" + basename)
+        if "ShortTerm" in selected_methods:
+            if not os.path.exists(new_dir + "ShortTerm"):
+                os.mkdir(new_dir + "ShortTerm")
+            ShortTerm(
+                time_sequence,
+                length_sequence,
+                ttl_sequence,
+                ip_flag_sequence,
+                tcp_flag_sequence,
+                packet_data_int_sequence,
+                new_dir + "ShortTerm" + basename,
+            )
 
-        if not os.path.exists(new_dir + "ETBert"):
-            os.mkdir(new_dir + "ETBert")
-        ETBert(packet_raw_string_sequence, new_dir + "ETBert" + basename)
+        if "ETBert" in selected_methods:
+            if not os.path.exists(new_dir + "ETBert"):
+                os.mkdir(new_dir + "ETBert")
+            ETBert(packet_raw_string_sequence, new_dir + "ETBert" + basename)
 
-        if not os.path.exists(new_dir + "Flowlens"):
-            os.mkdir(new_dir + "Flowlens")
-        FlowLens(length_sequence, new_dir + "Flowlens" + basename)
+        if "Flowlens" in selected_methods:
+            if not os.path.exists(new_dir + "Flowlens"):
+                os.mkdir(new_dir + "Flowlens")
+            FlowLens(length_sequence, new_dir + "Flowlens" + basename)
 
-        if not os.path.exists(new_dir + "Fs-net"):
-            os.mkdir(new_dir + "Fs-net")
-        FSNet(length_sequence, new_dir + "Fs-net" + basename)
+        if "Fs-net" in selected_methods:
+            if not os.path.exists(new_dir + "Fs-net"):
+                os.mkdir(new_dir + "Fs-net")
+            FSNet(length_sequence, new_dir + "Fs-net" + basename)
 
-        if not os.path.exists(new_dir + "AttnLSTM"):
-            os.mkdir(new_dir + "AttnLSTM")
-        AttnLSTM(packet_data_int_sequence, new_dir + "AttnLSTM" + basename)
+        if "AttnLSTM" in selected_methods:
+            if not os.path.exists(new_dir + "AttnLSTM"):
+                os.mkdir(new_dir + "AttnLSTM")
+            AttnLSTM(packet_data_int_sequence, new_dir + "AttnLSTM" + basename)
 
-        if not os.path.exists(new_dir + "Whisper"):
-            os.mkdir(new_dir + "Whisper")
-        Whisper(length_sequence, new_dir + "Whisper" + basename)
+        if "Whisper" in selected_methods:
+            if not os.path.exists(new_dir + "Whisper"):
+                os.mkdir(new_dir + "Whisper")
+            Whisper(length_sequence, new_dir + "Whisper" + basename)
 
-        if not os.path.exists(new_dir + "Characterize"):
-            os.mkdir(new_dir + "Characterize")
-        Characterize(time_sequence, new_dir + "Characterize" + basename)
+        if "Characterize" in selected_methods:
+            if not os.path.exists(new_dir + "Characterize"):
+                os.mkdir(new_dir + "Characterize")
+            Characterize(time_sequence, new_dir + "Characterize" + basename)
 
-        if not os.path.exists(new_dir + "Robust"):
-            os.mkdir(new_dir + "Robust")
-        Robust(length_sequence, new_dir + "Robust" + basename)
+        if "Robust" in selected_methods:
+            if not os.path.exists(new_dir + "Robust"):
+                os.mkdir(new_dir + "Robust")
+            Robust(length_sequence, new_dir + "Robust" + basename)

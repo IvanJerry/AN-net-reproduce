@@ -26,6 +26,12 @@ import matplotlib.pyplot as plt
 from model import TrafficDataset, AttnLSTM, FSNet, TrafficTripleDataset, BertModel, FinalModel
 from bert_util import BertTokenizer, AdamW
 
+# 这个脚本是整套实验的入口：
+# 1）解析命令行参数（数据集、方法、噪声比例等）
+# 2）从 data_{noise}/... 读取预处理好的特征文件
+# 3）构建 AN_Net 模型并训练
+# 4）在测试集上评估，并把 loss/ACC/F1 曲线画图保存到 result/ 目录
+
 SEED = 2023
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
@@ -33,33 +39,44 @@ np.random.seed(SEED)
 random.seed(SEED)
 torch.backends.cudnn.deterministic = True
 
+# 解析命令行参数
 parser = argparse.ArgumentParser(description='encrypted traffic classification')
+# dataset: 使用哪个数据集（0-SJTUAN21, 1-ISCXVPN, 2-ISCXTor, 3-USTC-TFC, 5-Cross-Platform）
 parser.add_argument('--dataset', default=0, type=int, help='datasets for training (0-2)')
+# method: 使用哪种特征方法，对应 data_{noise}/.../{method} 目录（ShortTerm 为主方法）
 parser.add_argument('--method', default="Whisper", choices=["Whisper", "Characterize", "Robust", "Flowlens",
                                                             "ShortTerm",
                                                             "AttnLSTM", "Fs-net", "ETBert"],
                     help='method to use')
+# noise: 噪声比例 / 类型，对应 data_0.0, data_0.5_TLS 等根目录名
 parser.add_argument('--noise', default="0.0", type=str, help='noise ratio')
+# num_layer: AN_Net 中叠加的层数
 parser.add_argument('--num_layer', default=2, type=int, help='Number of Layers')
+# with_relu: 是否在某些模块中加 ReLU 激活
 parser.add_argument('--with_relu', default=1, type=int, help='use relu (1) or not (0)')
+# with_ht: 是否使用 hard threshold（论文中的一个设计开关）
 parser.add_argument('--with_ht', default=1, type=int, help='use ht (1) or not (0)')
+# temp: temperature，影响对比学习/softmax 的平滑程度
 parser.add_argument('--temp', default=0.1, type=float, help='temperature')
+# with_re: 是否开启正则化 / 额外约束（re）
 parser.add_argument('--with_re', default=1, type=int, help='use re (1) or not (0)')
+# data_size: 使用多少比例的数据（1.0 表示全量）
 parser.add_argument('--data_size', default=1.0, type=float, help='data size')
 args = parser.parse_args()
 print(args)
-filenames = glob.glob(f"data_{args.noise}/0_SJTUAN21/*/{args.method}/*.*") \
-            + glob.glob(f"data_{args.noise}/1_ISCXVPN/{args.method}/*.*") \
-            + glob.glob(f"data_{args.noise}/2_ISCXTor/tor/{args.method}/*.*") \
-            + glob.glob(f"data_{args.noise}/3_USTC-TFC/*/{args.method}/*.*") \
-            + glob.glob(f"data_{args.noise}/5_Cross-Platform/*/*/{args.method}/*.*")
-filenames = [filename for filename in filenames if filename.split("/")[1][0] == str(args.dataset)]
+
+# 根据 noise 和 method 在 data_{noise}/... 下收集所有特征文件路径
+# 实际目录结构类似：data_0.0/0_SJTUAN21/train/<类别名>/<method>/*.npy
+# 这里只有 0_SJTUAN21（dataset=0）这一套数据，因此直接在 0_SJTUAN21 下匹配两级子目录
+filenames = glob.glob(f"data_{args.noise}/0_SJTUAN21/*/*/{args.method}/*.*")
 train_filenames = sorted([filename for filename in filenames if "train" in filename])
 test_filenames = sorted([filename for filename in filenames if "test" in filename])
 
 if args.dataset == 0:
+    # 对 SJTU-AN21（数据集 0），分类类别在路径的第 1 个位置
     classifier_position = 1
 else:
+    # 对其他数据集，分类类别在路径的第 0 个位置
     classifier_position = 0
 
 if args.dataset == 5:
@@ -288,8 +305,8 @@ elif args.method in ["ShortTerm", "AttnLSTM", "Fs-net", "ETBert"]:
     if args.method == "ETBert":
         train_set = TrafficTripleDataset(train_X, train_seg, train_Y)
         test_set = TrafficTripleDataset(test_X, test_seg, test_Y)
-        train_loader = DataLoader(train_set, batch_size=16, shuffle=True, drop_last=True, num_workers=0)
-        test_loader = DataLoader(test_set, batch_size=16, shuffle=False, drop_last=False, num_workers=0)
+        train_loader = DataLoader(train_set, batch_size=8, shuffle=True, drop_last=True, num_workers=0)
+        test_loader = DataLoader(test_set, batch_size=8, shuffle=False, drop_last=False, num_workers=0)
     else:
         train_set = TrafficDataset(train_X, train_Y)
         test_set = TrafficDataset(test_X, test_Y)
