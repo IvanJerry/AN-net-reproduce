@@ -112,12 +112,8 @@ def load_data(file_names, classify):
     X = []
     Y = []
     for filename in tqdm(file_names):
-        if args.dataset == 5:
-            cls = filename.split("/")[-4]
-        else:
-            cls = filename.split("/")[-1].split("_")[classifier_position]
-        if args.dataset == 3:
-            cls = cls.split("-")[0]
+        # CipherSpectrum: 类别 = 域名文件夹名 data_0.0/CipherSpectrum/<domain>/<method>/xxx.npy
+        cls = filename.split("/")[-3]
         cls_number = classify.index(cls)
         data_arr = np.load(filename)
         X.append(data_arr)
@@ -132,12 +128,8 @@ def load_data_csv(file_names, classify):
     X = []
     Y = []
     for filename in tqdm(file_names):
-        if args.dataset == 5:
-            cls = filename.split("/")[-4]
-        else:
-            cls = filename.split("/")[-1].split("_")[classifier_position]
-        if args.dataset == 3:
-            cls = cls.split("-")[0]
+        # CipherSpectrum: 类别 = 域名文件夹名 data_0.0/CipherSpectrum/<domain>/<method>/xxx.csv
+        cls = filename.split("/")[-3]
         cls_number = classify.index(cls)
         with open(filename, encoding='utf-8') as f:
             data_arr = np.loadtxt(f, str, delimiter=",")
