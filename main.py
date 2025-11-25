@@ -148,12 +148,8 @@ def load_data_bert(file_names, classify, tokenizer):
     cls_ls = []
     seg_ls = []
     for filename in tqdm(file_names):
-        if args.dataset == 5:
-            cls = filename.split("/")[-4]
-        else:
-            cls = filename.split("/")[-1].split("_")[classifier_position]
-        if args.dataset == 3:
-            cls = cls.split("-")[0]
+        # CipherSpectrum: 类别 = 域名文件夹名 data_0.0/CipherSpectrum/<domain>/ETBert/xxx.txt
+        cls = filename.split("/")[-3]
         cls_number = classify.index(cls)
         with open(filename, mode="r", encoding="utf-8") as f:
             for line_id, line in enumerate(f):
