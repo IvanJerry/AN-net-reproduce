@@ -13,6 +13,9 @@ SEED = 2023
 np.random.seed(SEED)
 random.seed(SEED)
 
+# 每个样本使用的报文数窗口，原始代码为 100，这里恢复为 100，并作为可配置常量
+WINDOW_SIZE = 100
+
 
 # 支持的特征方法名称，和目录名、main.py 中的 --method 一一对应
 METHOD_CHOICES = [
@@ -28,10 +31,13 @@ METHOD_CHOICES = [
 
 
 def parse_args():
-    # 通过命令行参数控制要生成哪些方法的数据
-    # --methods ALL              -> 生成所有方法（默认，等价于原始脚本行为）
-    # --methods ShortTerm        -> 只生成 ShortTerm 特征
-    # --methods ShortTerm,Whisper -> 同时生成多个方法
+    # 通过命令行参数控制要生成哪些方法、处理哪些数据集
+    # --methods ALL                 -> 生成所有方法（默认，等价于原始脚本行为）
+    # --methods ShortTerm           -> 只生成 ShortTerm 特征
+    # --methods ShortTerm,Whisper   -> 同时生成多个方法
+    # --datasets CipherSpectrum     -> 只处理 CipherSpectrum 的 RawData
+    # --datasets CipherSpectrum ISCXVPN ISCXTor -> 同时处理多套数据
+    # --datasets ALL                -> 处理三套数据（默认）
     parser = argparse.ArgumentParser(description="Preprocess raw data into method-specific features")
     parser.add_argument(
         "--methods",
@@ -40,6 +46,16 @@ def parse_args():
         help=(
             "Comma-separated list of methods to process, e.g. "
             "'ShortTerm,Whisper'. Use 'ALL' to process all methods."
+        ),
+    )
+    parser.add_argument(
+        "--datasets",
+        nargs="+",
+        default=["ALL"],
+        choices=["ALL", "CipherSpectrum", "ISCXVPN", "ISCXTor"],
+        help=(
+            "Datasets to process. Choose one or more of 'CipherSpectrum', 'ISCXVPN', 'ISCXTor', "
+            "or use 'ALL' (default) to process all of them."
         ),
     )
     return parser.parse_args()
@@ -122,8 +138,8 @@ def FlowLens(length_sequence, basename):
         else:
             data_csv.write("packetLengthBin_" + str(size) + ", ")
 
-    for i in range(len(length_sequence) // 100):
-        tmp_length_sequence = length_sequence[i * 100: (i + 1) * 100]
+    for i in range(len(length_sequence) // WINDOW_SIZE):
+        tmp_length_sequence = length_sequence[i * WINDOW_SIZE: (i + 1) * WINDOW_SIZE]
         bin_distribution = defaultdict(int)
         for packet_size in tmp_length_sequence:
             packet_size_binned = RoundToNearest(int(packet_size), binWidth)
@@ -138,23 +154,23 @@ def FlowLens(length_sequence, basename):
 
 
 def FSNet(length_sequence, basename):
-    instance_num = len(length_sequence) // 100
-    length_sequence = length_sequence[: instance_num * 100]
-    length_sequence = length_sequence.reshape(-1, 100)
+    instance_num = len(length_sequence) // WINDOW_SIZE
+    length_sequence = length_sequence[: instance_num * WINDOW_SIZE]
+    length_sequence = length_sequence.reshape(-1, WINDOW_SIZE)
     np.save(basename + ".npy", length_sequence)
 
 
 def AttnLSTM(packet_data_int_sequence, basename):
-    instance_num = len(packet_data_int_sequence) // 100
-    packet_data_int_sequence = packet_data_int_sequence[: instance_num * 100]
-    packet_data_int_sequence = packet_data_int_sequence.reshape(-1, 100, 64)
+    instance_num = len(packet_data_int_sequence) // WINDOW_SIZE
+    packet_data_int_sequence = packet_data_int_sequence[: instance_num * WINDOW_SIZE]
+    packet_data_int_sequence = packet_data_int_sequence.reshape(-1, WINDOW_SIZE, 64)
     np.save(basename + ".npy", packet_data_int_sequence)
 
 
 def Whisper(length_sequence, basename):
-    instance_num = len(length_sequence) // 100
-    length_sequence = length_sequence[: instance_num * 100]
-    length_sequence = length_sequence.reshape(-1, 100)
+    instance_num = len(length_sequence) // WINDOW_SIZE
+    length_sequence = length_sequence[: instance_num * WINDOW_SIZE]
+    length_sequence = length_sequence.reshape(-1, WINDOW_SIZE)
     spectral_arr = fft.fft(length_sequence, axis=-1)
     spectral_arr = np.abs(spectral_arr)
     result = spectral_arr[:, :51]
@@ -178,27 +194,27 @@ def extract_statistical(arr):
 
 def Characterize(time_sequence, basename):
     time_delta = time_sequence
-    instance_num = len(time_delta) // 100
-    time_delta = time_delta[: instance_num * 100]
-    time_delta = time_delta.reshape(-1, 100)
+    instance_num = len(time_delta) // WINDOW_SIZE
+    time_delta = time_delta[: instance_num * WINDOW_SIZE]
+    time_delta = time_delta.reshape(-1, WINDOW_SIZE)
 
     statistics = extract_statistical(time_delta)
     np.save(basename + ".npy", statistics)
 
 
 def Robust(length_sequence, basename):
-    instance_num = len(length_sequence) // 100
-    length_sequence = length_sequence[: instance_num * 100]
-    length_sequence = length_sequence.reshape(-1, 100)
+    instance_num = len(length_sequence) // WINDOW_SIZE
+    length_sequence = length_sequence[: instance_num * WINDOW_SIZE]
+    length_sequence = length_sequence.reshape(-1, WINDOW_SIZE)
 
     statistics = extract_statistical(length_sequence)
     np.save(basename + ".npy", statistics)
 
 
 def ETBert(packet_raw_string_sequence, basename):
-    instance_num = len(length_sequence) // 100
-    packet_raw_string_sequence = packet_raw_string_sequence[: instance_num * 100]
-    packet_raw_string_sequence = packet_raw_string_sequence.reshape(-1, 100)
+    instance_num = len(length_sequence) // WINDOW_SIZE
+    packet_raw_string_sequence = packet_raw_string_sequence[: instance_num * WINDOW_SIZE]
+    packet_raw_string_sequence = packet_raw_string_sequence.reshape(-1, WINDOW_SIZE)
     f = open(basename + ".txt", "w")
     for i in range(instance_num):
         flow_raw_string = list(packet_raw_string_sequence[i])
@@ -228,29 +244,29 @@ def ETBert(packet_raw_string_sequence, basename):
 
 
 def ShortTerm(time_sequence, length_sequence, ttl_sequence, ip_flag_sequence, tcp_flag_sequence, packet_data_int_sequence, basename):
-    instance_num = len(length_sequence) // 100
-    length_sequence = length_sequence[: instance_num * 100]
-    length_sequence = length_sequence.reshape(-1, 100, 1)
+    instance_num = len(length_sequence) // WINDOW_SIZE
+    length_sequence = length_sequence[: instance_num * WINDOW_SIZE]
+    length_sequence = length_sequence.reshape(-1, WINDOW_SIZE, 1)
 
     time_delta = time_sequence
-    time_delta = time_delta[: instance_num * 100]
-    time_delta = time_delta.reshape(-1, 100, 1)
+    time_delta = time_delta[: instance_num * WINDOW_SIZE]
+    time_delta = time_delta.reshape(-1, WINDOW_SIZE, 1)
 
-    instance_num = len(ttl_sequence) // 100
-    ttl_sequence = ttl_sequence[: instance_num * 100]
-    ttl_sequence = ttl_sequence.reshape(-1, 100, 1)
+    instance_num = len(ttl_sequence) // WINDOW_SIZE
+    ttl_sequence = ttl_sequence[: instance_num * WINDOW_SIZE]
+    ttl_sequence = ttl_sequence.reshape(-1, WINDOW_SIZE, 1)
 
-    instance_num = len(ip_flag_sequence) // 100
-    ip_flag_sequence = ip_flag_sequence[: instance_num * 100]
-    ip_flag_sequence = ip_flag_sequence.reshape(-1, 100, 1)
+    instance_num = len(ip_flag_sequence) // WINDOW_SIZE
+    ip_flag_sequence = ip_flag_sequence[: instance_num * WINDOW_SIZE]
+    ip_flag_sequence = ip_flag_sequence.reshape(-1, WINDOW_SIZE, 1)
 
-    instance_num = len(tcp_flag_sequence) // 100
-    tcp_flag_sequence = tcp_flag_sequence[: instance_num * 100]
-    tcp_flag_sequence = tcp_flag_sequence.reshape(-1, 100, 1)
+    instance_num = len(tcp_flag_sequence) // WINDOW_SIZE
+    tcp_flag_sequence = tcp_flag_sequence[: instance_num * WINDOW_SIZE]
+    tcp_flag_sequence = tcp_flag_sequence.reshape(-1, WINDOW_SIZE, 1)
 
-    instance_num = len(packet_data_int_sequence) // 100
-    packet_data_int_sequence = packet_data_int_sequence[: instance_num * 100]
-    packet_data_int_sequence = packet_data_int_sequence.reshape(-1, 100, 64)
+    instance_num = len(packet_data_int_sequence) // WINDOW_SIZE
+    packet_data_int_sequence = packet_data_int_sequence[: instance_num * WINDOW_SIZE]
+    packet_data_int_sequence = packet_data_int_sequence.reshape(-1, WINDOW_SIZE, 64)
 
     result = np.concatenate(
         [length_sequence, time_delta, ttl_sequence, ip_flag_sequence, tcp_flag_sequence, packet_data_int_sequence], axis=-1)
@@ -264,12 +280,29 @@ if args.methods.upper() == "ALL":
 else:
     selected_methods = set(m.strip() for m in args.methods.split(",") if m.strip())
 
+# 解析要处理的数据集集合
+if "ALL" in args.datasets:
+    selected_datasets = {"CipherSpectrum", "ISCXVPN", "ISCXTor"}
+else:
+    selected_datasets = set(args.datasets)
+
 
 for noise in [0.0, "0.5_SIM", "0.5_TLS", "0.75_SIM", "0.75_TLS"]:
+    filenames = []
     if noise == 0.0:
-        filenames = glob.glob(f"RawData/CipherSpectrum/*/*.npy")
+        if "CipherSpectrum" in selected_datasets:
+            filenames += glob.glob("RawData/CipherSpectrum/*/*.npy")
+        if "ISCXVPN" in selected_datasets:
+            filenames += glob.glob("RawData/ISCXVPN/*/*.npy")
+        if "ISCXTor" in selected_datasets:
+            filenames += glob.glob("RawData/ISCXTor/*/*.npy")
     else:
-        filenames = glob.glob(f"RawData_{noise}/CipherSpectrum/*/*.npy")
+        if "CipherSpectrum" in selected_datasets:
+            filenames += glob.glob(f"RawData_{noise}/CipherSpectrum/*/*.npy")
+        if "ISCXVPN" in selected_datasets:
+            filenames += glob.glob(f"RawData_{noise}/ISCXVPN/*/*.npy")
+        if "ISCXTor" in selected_datasets:
+            filenames += glob.glob(f"RawData_{noise}/ISCXTor/*/*.npy")
     filenames = [filename[:-6] for filename in filenames]
     filenames = sorted(set(filenames))
 

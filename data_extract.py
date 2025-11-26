@@ -11,7 +11,14 @@ import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Extract TCP packet features from CipherSpectrum pcaps",
+        description="Extract TCP packet features from pcaps for different datasets",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="CipherSpectrum",
+        choices=["CipherSpectrum", "ISCXVPN", "ISCXTor"],
+        help="Which dataset to extract (CipherSpectrum, ISCXVPN, ISCXTor)",
     )
     parser.add_argument(
         "--cipher_root",
@@ -19,12 +26,34 @@ def parse_args():
         default="traffic_data/CipherSpectrum",
         help="Root directory of CipherSpectrum pcaps (can be absolute, e.g. /mnt1/lb/Datasets/CipherSpectrum)",
     )
+    parser.add_argument(
+        "--iscxvpn_root",
+        type=str,
+        default="/mnt1/zs/Dataset/VPN",
+        help="Root directory of ISCX-VPN pcaps (per-class subfolders)",
+    )
+    parser.add_argument(
+        "--iscxtor_root",
+        type=str,
+        default="/mnt1/zs/Dataset/Tor",
+        help="Root directory of ISCXTor pcaps (per-class subfolders)",
+    )
     return parser.parse_args()
 
 
 args = parse_args()
-cipher_root = args.cipher_root.rstrip("/\\")
-filenames = glob.glob(os.path.join(cipher_root, "*", "*.pcap"))
+if args.dataset == "CipherSpectrum":
+    input_root = args.cipher_root.rstrip("/\\")
+    raw_subdir = "CipherSpectrum"
+elif args.dataset == "ISCXVPN":
+    input_root = args.iscxvpn_root.rstrip("/\\")
+    raw_subdir = "ISCXVPN"
+else:  # ISCXTor
+    input_root = args.iscxtor_root.rstrip("/\\")
+    raw_subdir = "ISCXTor"
+
+filenames = glob.glob(os.path.join(input_root, "*", "*.pcap"))
+print("Dataset:", args.dataset, "input root:", input_root)
 print("Found files:", len(filenames))
 
 def extract(payload):
@@ -37,9 +66,10 @@ def extract(payload):
 
 
 for filename in tqdm(filenames):
-    basename = os.path.basename(filename).split(".")[0]
+    # 使用完整文件名去掉最后一个扩展名作为基名，避免多个 flow 覆盖同一个 npy 文件
+    basename = os.path.splitext(os.path.basename(filename))[0]
     domain = os.path.basename(os.path.dirname(filename))
-    new_dir = os.path.join("RawData", "CipherSpectrum", domain)
+    new_dir = os.path.join("RawData", raw_subdir, domain)
     if not os.path.isdir(new_dir):
         os.makedirs(new_dir)
     # 逐包读取当前 pcap 文件中的报文，只保留 TCP 包，并提取一条流的各类序列特征
@@ -50,11 +80,14 @@ for filename in tqdm(filenames):
         ip_flag_sequence = []            # 每个包的 IP 标志位序列
         tcp_flag_sequence = []           # 每个包的 TCP 标志位序列
         packet_raw_string_sequence = []  # 每个 TCP 包的原始报文（截断为固定长度的十六进制串）
+        tcp_count = 0                    # 调试：统计当前 pcap 中的 TCP 包数量
         while True:
             try:
                 packet = fdesc.read_packet()   # 读取一个报文
                 result = extract(packet)       # 按层次展开，提取各协议层（IP/TCP 等）
-                if "TCP" in result:           # 只保留包含 TCP 层的报文
+                # 只保留同时包含 IP 层和 TCP 层的报文，避免因为没有 IP 层而访问出错
+                if "TCP" in result and "IP" in result:
+                    tcp_count += 1
                     time = float(packet.time)  # 报文时间戳
                     if result["TCP"].payload.name == "NoPayload":
                         length = 0            # 没有负载时，长度记为 0
@@ -75,6 +108,12 @@ for filename in tqdm(filenames):
                     tcp_flag_sequence.append(tcp_flag)
             except EOFError:
                 break
+            except Exception as e:
+                # 单个报文解析错误时跳过，避免导致整个 pcap 处理终止
+                print("[WARN] error parsing packet in", filename, ":", repr(e))
+                continue
+        # 调试输出：当前 pcap 中被识别为 TCP 的包的数量
+        print("[DEBUG]", filename, "TCP packets:", tcp_count)
     if len(time_sequence) > 0:
         time_sequence = np.array(time_sequence)
         time_sequence -= time_sequence[0]

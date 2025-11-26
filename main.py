@@ -41,8 +41,8 @@ torch.backends.cudnn.deterministic = True
 
 # 解析命令行参数
 parser = argparse.ArgumentParser(description='encrypted traffic classification')
-# dataset: 数据集编号，这里主要用于日志命名；当前脚本默认使用 CipherSpectrum，可保持为 0
-parser.add_argument('--dataset', default=0, type=int, help='dataset id (kept for compatibility, default 0 for CipherSpectrum)')
+# dataset: 数据集编号：0-CipherSpectrum, 1-ISCXVPN, 2-ISCXTor
+parser.add_argument('--dataset', default=0, type=int, help='dataset id: 0=CipherSpectrum, 1=ISCXVPN, 2=ISCXTor')
 # method: 使用哪种特征方法，对应 data_{noise}/.../{method} 目录（ShortTerm 为主方法）
 parser.add_argument('--method', default="Whisper", choices=["Whisper", "Characterize", "Robust", "Flowlens",
                                                             "ShortTerm",
@@ -65,15 +65,24 @@ parser.add_argument('--data_size', default=1.0, type=float, help='data size')
 args = parser.parse_args()
 print(args)
 
-# 根据 noise 和 method 在 data_{noise}/CipherSpectrum 下收集所有特征文件路径
-# 期望目录结构：data_<noise>/CipherSpectrum/<domain>/<method>/*.npy
-filenames = glob.glob(f"data_{args.noise}/CipherSpectrum/*/{args.method}/*.*")
+# 根据 noise / dataset / method 在 data_{noise}/<DatasetName> 下收集特征文件路径
+DATASET_NAME = {
+    0: "CipherSpectrum",
+    1: "ISCXVPN",
+    2: "ISCXTor",
+}
+
+if args.dataset not in DATASET_NAME:
+    raise ValueError(f"Unsupported dataset id {args.dataset}, expected one of {list(DATASET_NAME.keys())}")
+
+dataset_name = DATASET_NAME[args.dataset]
+filenames = glob.glob(f"data_{args.noise}/{dataset_name}/*/{args.method}/*.*")
 filenames = sorted(filenames)
 
 if len(filenames) == 0:
-    raise RuntimeError(f"No files found for pattern data_{args.noise}/CipherSpectrum/*/{args.method}/*.*")
+    raise RuntimeError(f"No files found for pattern data_{args.noise}/{dataset_name}/*/{args.method}/*.*")
 
-# CipherSpectrum 中的类别使用域名文件夹名：data_0.0/CipherSpectrum/<domain>/<method>/xxx.npy
+# 类别使用域名/子目录名：data_0.0/<DatasetName>/<domain>/<method>/xxx.npy
 classifier = sorted(set([filename.split("/")[-3] for filename in filenames]))
 
 # 按会话级随机划分 train / test（例如 8:2），不依赖 train/test 物理文件夹
@@ -309,6 +318,9 @@ elif args.method in ["ShortTerm", "AttnLSTM", "Fs-net", "ETBert"]:
         max_epoch = 4
     elif args.dataset == 2 and args.method != "ShortTerm":
         max_epoch = 100
+    elif args.dataset == 0 and args.method == "ShortTerm":
+        # CipherSpectrum + ShortTerm: 在原来基础上多训练 100 个 epoch（50 -> 100）
+        max_epoch = 60
     else:
         max_epoch = 50
     for epoch in range(max_epoch):
